@@ -1,0 +1,12 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>br.com.daruix</groupId><artifactId>legacy-bridge-drivers</artifactId><version>1.0</version>
+  <dependencies>
+    <dependency>
+    <groupId>io.github.spannm</groupId>
+    <artifactId>ucanaccess</artifactId>
+    <version>5.1.6</version>
+</dependency>
+  </dependencies>
+</project>
+

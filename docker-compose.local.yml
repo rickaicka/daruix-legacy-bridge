@@ -1,0 +1,31 @@
+services:
+  legacy-bridge:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+
+    volumes:
+      - ./local-data:/legacy-db:ro
+
+    ports:
+      - "8100:8100"
+
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -fsS
+        - http://127.0.0.1:8100/health/live
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    read_only: true
+
+    tmpfs:
+      - /tmp
+
+    security_opt:
+      - no-new-privileges:true

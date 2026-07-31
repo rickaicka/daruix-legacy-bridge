@@ -1,0 +1,23 @@
+[project]
+name = "daruix-legacy-bridge"
+version = "0.1.0"
+description = "API privada e somente leitura para o banco Access legado da Daruix"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi==0.116.1",
+  "uvicorn[standard]==0.35.0",
+  "pydantic-settings==2.10.1",
+  "JayDeBeApi==1.2.3",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx==0.28.1",
+  "pytest==8.4.1",
+  "pytest-cov==6.2.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
