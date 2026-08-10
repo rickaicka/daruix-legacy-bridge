@@ -7,4 +7,5 @@ htmlcov/
 *.py[cod]
 .local-data/
 local-data
+local-data/
 
