@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -38,3 +40,29 @@ class WorkResponse(BaseModel):
     attention_to_suggestion: str
     delivery_address: str
     delivery_phone: str
+
+
+class LegacyTableColumnResponse(BaseModel):
+    name: str
+    type: str
+
+
+class LegacyTableInfoResponse(BaseModel):
+    resource: str
+    expected_table_names: list[str]
+    table_name: str | None = None
+    available: bool
+    row_count: int | None = None
+    columns: list[LegacyTableColumnResponse] = Field(default_factory=list)
+    similar_table_names: list[str] = Field(default_factory=list)
+
+
+class LegacyTablePageResponse(BaseModel):
+    resource: str
+    table_name: str
+    columns: list[LegacyTableColumnResponse]
+    items: list[dict[str, Any]]
+    offset: int
+    limit: int
+    has_more: bool
+    next_offset: int | None = None

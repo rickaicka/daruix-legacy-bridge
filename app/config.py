@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     bridge_service_token: SecretStr
-    bridge_allowed_clients: str = "127.0.0.1"
+    bridge_allowed_clients: str = "127.0.0.1, 172.19.0.1, 172.18.0.1"
     legacy_db_path: Path = Path("/legacy-db/SGO.accdb")
     legacy_db_password: SecretStr = SecretStr("")
     ucanaccess_classpath: str = "/opt/ucanaccess/*"

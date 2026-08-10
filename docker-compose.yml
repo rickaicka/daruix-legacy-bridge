@@ -8,7 +8,7 @@ services:
     networks:
       - bridge-private
     ports:
-      - "10.70.0.2:8100:8100"
+      - "127.0.0.1:8100:8100"
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8100/health/live"]
       interval: 30s

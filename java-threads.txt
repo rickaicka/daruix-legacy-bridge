@@ -1,0 +1,138 @@
+﻿legacy-bridge-1  | 2026-08-01T20:02:09.552080465Z 2026-08-01 20:02:09
+legacy-bridge-1  | 2026-08-01T20:02:09.552222784Z Full thread dump OpenJDK 64-Bit Server VM (21.0.11+10-1-deb13u2-Debian mixed mode, sharing):
+legacy-bridge-1  | 2026-08-01T20:02:09.552227997Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.552230033Z Threads class SMR info:
+legacy-bridge-1  | 2026-08-01T20:02:09.552231876Z _java_thread_list=0x00007e7d74165b70, length=12, elements={
+legacy-bridge-1  | 2026-08-01T20:02:09.552233699Z 0x00007e7e3405d720, 0x00007e7e34284560, 0x00007e7e34285b20, 0x00007e7e34287300,
+legacy-bridge-1  | 2026-08-01T20:02:09.552235542Z 0x00007e7e34288990, 0x00007e7e34289f80, 0x00007e7e3428bae0, 0x00007e7e3428d1f0,
+legacy-bridge-1  | 2026-08-01T20:02:09.552237349Z 0x00007e7e342995e0, 0x00007e7e3429d620, 0x00007e7e34345730, 0x00007e7e3446a700
+legacy-bridge-1  | 2026-08-01T20:02:09.552239153Z }
+legacy-bridge-1  | 2026-08-01T20:02:09.552240987Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.552244415Z "main" #1 [17] prio=5 os_prio=0 cpu=466907.47ms elapsed=5986.11s tid=0x00007e7e3405d720 nid=17 runnable  [0x0000000000000000]
+legacy-bridge-1  | 2026-08-01T20:02:09.552246512Z    java.lang.Thread.State: RUNNABLE
+legacy-bridge-1  | 2026-08-01T20:02:09.552248268Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.552319922Z "Reference Handler" #9 [213] daemon prio=10 os_prio=0 cpu=6.76ms elapsed=5986.05s tid=0x00007e7e34284560 nid=213 waiting on condition  [0x00007e7dbadfc000]
+legacy-bridge-1  | 2026-08-01T20:02:09.552331548Z    java.lang.Thread.State: RUNNABLE
+legacy-bridge-1  | 2026-08-01T20:02:09.552955364Z 	at java.lang.ref.Reference.waitForReferencePendingList(java.base@21.0.11/Native Method)
+legacy-bridge-1  | 2026-08-01T20:02:09.553001004Z 	at java.lang.ref.Reference.processPendingReferences(java.base@21.0.11/Reference.java:246)
+legacy-bridge-1  | 2026-08-01T20:02:09.553085937Z 	at java.lang.ref.Reference$ReferenceHandler.run(java.base@21.0.11/Reference.java:208)
+legacy-bridge-1  | 2026-08-01T20:02:09.553151367Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.553209593Z "Finalizer" #10 [214] daemon prio=8 os_prio=0 cpu=0.23ms elapsed=5986.05s tid=0x00007e7e34285b20 nid=214 in Object.wait()  [0x00007e7dbacfc000]
+legacy-bridge-1  | 2026-08-01T20:02:09.553219188Z    java.lang.Thread.State: WAITING (on object monitor)
+legacy-bridge-1  | 2026-08-01T20:02:09.553325887Z 	at java.lang.Object.wait0(java.base@21.0.11/Native Method)
+legacy-bridge-1  | 2026-08-01T20:02:09.553500637Z 	- waiting on <0x0000000580801918> (a java.lang.ref.NativeReferenceQueue$Lock)
+legacy-bridge-1  | 2026-08-01T20:02:09.553529955Z 	at java.lang.Object.wait(java.base@21.0.11/Object.java:366)
+legacy-bridge-1  | 2026-08-01T20:02:09.553534743Z 	at java.lang.Object.wait(java.base@21.0.11/Object.java:339)
+legacy-bridge-1  | 2026-08-01T20:02:09.553712849Z 	at java.lang.ref.NativeReferenceQueue.await(java.base@21.0.11/NativeReferenceQueue.java:48)
+legacy-bridge-1  | 2026-08-01T20:02:09.553784326Z 	at java.lang.ref.ReferenceQueue.remove0(java.base@21.0.11/ReferenceQueue.java:158)
+legacy-bridge-1  | 2026-08-01T20:02:09.553789455Z 	at java.lang.ref.NativeReferenceQueue.remove(java.base@21.0.11/NativeReferenceQueue.java:89)
+legacy-bridge-1  | 2026-08-01T20:02:09.553791775Z 	- locked <0x0000000580801918> (a java.lang.ref.NativeReferenceQueue$Lock)
+legacy-bridge-1  | 2026-08-01T20:02:09.553841768Z 	at java.lang.ref.Finalizer$FinalizerThread.run(java.base@21.0.11/Finalizer.java:173)
+legacy-bridge-1  | 2026-08-01T20:02:09.553845493Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.553847906Z "Signal Dispatcher" #11 [215] daemon prio=9 os_prio=0 cpu=1.01ms elapsed=5986.05s tid=0x00007e7e34287300 nid=215 waiting on condition  [0x0000000000000000]
+legacy-bridge-1  | 2026-08-01T20:02:09.553849520Z    java.lang.Thread.State: RUNNABLE
+legacy-bridge-1  | 2026-08-01T20:02:09.553850874Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.553930432Z "Service Thread" #12 [216] daemon prio=9 os_prio=0 cpu=3.72ms elapsed=5986.05s tid=0x00007e7e34288990 nid=216 runnable  [0x0000000000000000]
+legacy-bridge-1  | 2026-08-01T20:02:09.553940415Z    java.lang.Thread.State: RUNNABLE
+legacy-bridge-1  | 2026-08-01T20:02:09.553942671Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.553944665Z "Monitor Deflation Thread" #13 [217] daemon prio=9 os_prio=0 cpu=758.24ms elapsed=5986.05s tid=0x00007e7e34289f80 nid=217 runnable  [0x0000000000000000]
+legacy-bridge-1  | 2026-08-01T20:02:09.553947085Z    java.lang.Thread.State: RUNNABLE
+legacy-bridge-1  | 2026-08-01T20:02:09.553949070Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.554039140Z "C2 CompilerThread0" #14 [218] daemon prio=9 os_prio=0 cpu=10105.23ms elapsed=5986.05s tid=0x00007e7e3428bae0 nid=218 waiting on condition  [0x0000000000000000]
+legacy-bridge-1  | 2026-08-01T20:02:09.554102705Z    java.lang.Thread.State: RUNNABLE
+legacy-bridge-1  | 2026-08-01T20:02:09.554107554Z    No compile task
+legacy-bridge-1  | 2026-08-01T20:02:09.554109383Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.554113788Z "C1 CompilerThread0" #22 [219] daemon prio=9 os_prio=0 cpu=1159.89ms elapsed=5986.05s tid=0x00007e7e3428d1f0 nid=219 waiting on condition  [0x0000000000000000]
+legacy-bridge-1  | 2026-08-01T20:02:09.554116314Z    java.lang.Thread.State: RUNNABLE
+legacy-bridge-1  | 2026-08-01T20:02:09.554118314Z    No compile task
+legacy-bridge-1  | 2026-08-01T20:02:09.554120397Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.554123415Z "Notification Thread" #26 [220] daemon prio=9 os_prio=0 cpu=0.17ms elapsed=5986.05s tid=0x00007e7e342995e0 nid=220 runnable  [0x0000000000000000]
+legacy-bridge-1  | 2026-08-01T20:02:09.554125442Z    java.lang.Thread.State: RUNNABLE
+legacy-bridge-1  | 2026-08-01T20:02:09.554126621Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.554127695Z "Common-Cleaner" #27 [221] daemon prio=8 os_prio=0 cpu=7.41ms elapsed=5986.04s tid=0x00007e7e3429d620 nid=221 waiting on condition  [0x00007e7dba52b000]
+legacy-bridge-1  | 2026-08-01T20:02:09.554129081Z    java.lang.Thread.State: TIMED_WAITING (parking)
+legacy-bridge-1  | 2026-08-01T20:02:09.554297936Z 	at jdk.internal.misc.Unsafe.park(java.base@21.0.11/Native Method)
+legacy-bridge-1  | 2026-08-01T20:02:09.554307596Z 	- parking to wait for  <0x0000000580810990> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
+legacy-bridge-1  | 2026-08-01T20:02:09.554450142Z 	at java.util.concurrent.locks.LockSupport.parkNanos(java.base@21.0.11/LockSupport.java:269)
+legacy-bridge-1  | 2026-08-01T20:02:09.554526028Z 	at java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(java.base@21.0.11/AbstractQueuedSynchronizer.java:1886)
+legacy-bridge-1  | 2026-08-01T20:02:09.554600478Z 	at java.lang.ref.ReferenceQueue.await(java.base@21.0.11/ReferenceQueue.java:71)
+legacy-bridge-1  | 2026-08-01T20:02:09.554617686Z 	at java.lang.ref.ReferenceQueue.remove0(java.base@21.0.11/ReferenceQueue.java:143)
+legacy-bridge-1  | 2026-08-01T20:02:09.554622061Z 	at java.lang.ref.ReferenceQueue.remove(java.base@21.0.11/ReferenceQueue.java:218)
+legacy-bridge-1  | 2026-08-01T20:02:09.554775825Z 	at jdk.internal.ref.CleanerImpl.run(java.base@21.0.11/CleanerImpl.java:140)
+legacy-bridge-1  | 2026-08-01T20:02:09.554784715Z 	at java.lang.Thread.runWith(java.base@21.0.11/Thread.java:1596)
+legacy-bridge-1  | 2026-08-01T20:02:09.554787172Z 	at java.lang.Thread.run(java.base@21.0.11/Thread.java:1583)
+legacy-bridge-1  | 2026-08-01T20:02:09.554829343Z 	at jdk.internal.misc.InnocuousThread.run(java.base@21.0.11/InnocuousThread.java:186)
+legacy-bridge-1  | 2026-08-01T20:02:09.554835573Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.554836972Z "Python Reference Queue" #28 [223] daemon prio=5 os_prio=0 cpu=2210.07ms elapsed=5985.96s tid=0x00007e7e34345730 nid=223 waiting on condition  [0x00007e7dba32b000]
+legacy-bridge-1  | 2026-08-01T20:02:09.554839565Z    java.lang.Thread.State: TIMED_WAITING (parking)
+legacy-bridge-1  | 2026-08-01T20:02:09.554841789Z 	at jdk.internal.misc.Unsafe.park(java.base@21.0.11/Native Method)
+legacy-bridge-1  | 2026-08-01T20:02:09.554844657Z 	- parking to wait for  <0x000000058091e448> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
+legacy-bridge-1  | 2026-08-01T20:02:09.554853312Z 	at java.util.concurrent.locks.LockSupport.parkNanos(java.base@21.0.11/LockSupport.java:269)
+legacy-bridge-1  | 2026-08-01T20:02:09.554855859Z 	at java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(java.base@21.0.11/AbstractQueuedSynchronizer.java:1886)
+legacy-bridge-1  | 2026-08-01T20:02:09.554857822Z 	at java.lang.ref.ReferenceQueue.await(java.base@21.0.11/ReferenceQueue.java:71)
+legacy-bridge-1  | 2026-08-01T20:02:09.554859637Z 	at java.lang.ref.ReferenceQueue.remove0(java.base@21.0.11/ReferenceQueue.java:143)
+legacy-bridge-1  | 2026-08-01T20:02:09.554861709Z 	at java.lang.ref.ReferenceQueue.remove(java.base@21.0.11/ReferenceQueue.java:218)
+legacy-bridge-1  | 2026-08-01T20:02:09.555073285Z 	at org.jpype.ref.JPypeReferenceQueue$Worker.run(Unknown Source)
+legacy-bridge-1  | 2026-08-01T20:02:09.555081135Z 	at java.lang.Thread.runWith(java.base@21.0.11/Thread.java:1596)
+legacy-bridge-1  | 2026-08-01T20:02:09.555083598Z 	at java.lang.Thread.run(java.base@21.0.11/Thread.java:1583)
+legacy-bridge-1  | 2026-08-01T20:02:09.555085914Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.555329229Z "MemoryTimer-SGO_be.accdb" #34 [232] daemon prio=5 os_prio=0 cpu=0.29ms elapsed=5985.49s tid=0x00007e7e3446a700 nid=232 in Object.wait()  [0x00007e7db9a28000]
+legacy-bridge-1  | 2026-08-01T20:02:09.555337677Z    java.lang.Thread.State: WAITING (on object monitor)
+legacy-bridge-1  | 2026-08-01T20:02:09.555340185Z 	at java.lang.Object.wait0(java.base@21.0.11/Native Method)
+legacy-bridge-1  | 2026-08-01T20:02:09.555393268Z 	- waiting on <0x000000058094f7a0> (a java.util.TaskQueue)
+legacy-bridge-1  | 2026-08-01T20:02:09.555401328Z 	at java.lang.Object.wait(java.base@21.0.11/Object.java:366)
+legacy-bridge-1  | 2026-08-01T20:02:09.555403454Z 	at java.lang.Object.wait(java.base@21.0.11/Object.java:339)
+legacy-bridge-1  | 2026-08-01T20:02:09.555500317Z 	at java.util.TimerThread.mainLoop(java.base@21.0.11/Timer.java:537)
+legacy-bridge-1  | 2026-08-01T20:02:09.555506309Z 	- locked <0x000000058094f7a0> (a java.util.TaskQueue)
+legacy-bridge-1  | 2026-08-01T20:02:09.555507813Z 	at java.util.TimerThread.run(java.base@21.0.11/Timer.java:516)
+legacy-bridge-1  | 2026-08-01T20:02:09.555509222Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.555637717Z "G1 Conc#2" os_prio=0 cpu=4565.74ms elapsed=5942.94s tid=0x00007e7e040016a0 nid=301 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.555663993Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.555692589Z "G1 Conc#1" os_prio=0 cpu=4555.74ms elapsed=5942.94s tid=0x00007e7e04000ce0 nid=300 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.555718826Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.555925789Z "GC Thread#12" os_prio=0 cpu=1011.45ms elapsed=5985.40s tid=0x00007e7da8005e80 nid=241 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.555937060Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.556017034Z "GC Thread#11" os_prio=0 cpu=1021.42ms elapsed=5985.40s tid=0x00007e7da8005340 nid=240 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.556043139Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.556049898Z "GC Thread#10" os_prio=0 cpu=1008.64ms elapsed=5985.40s tid=0x00007e7da8004850 nid=239 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.556052570Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.556280930Z "GC Thread#9" os_prio=0 cpu=1001.40ms elapsed=5985.40s tid=0x00007e7da8003d60 nid=238 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.556308905Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.556341178Z "GC Thread#8" os_prio=0 cpu=1016.13ms elapsed=5985.40s tid=0x00007e7da8003270 nid=237 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.556348976Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.556498276Z "GC Thread#7" os_prio=0 cpu=1000.26ms elapsed=5985.40s tid=0x00007e7da8010510 nid=236 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.556506333Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.556566638Z "GC Thread#6" os_prio=0 cpu=1031.44ms elapsed=5985.40s tid=0x00007e7da800fa60 nid=235 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.556570351Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.556696629Z "GC Thread#5" os_prio=0 cpu=1008.52ms elapsed=5985.40s tid=0x00007e7da800f030 nid=234 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.556704582Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.556837791Z "GC Thread#4" os_prio=0 cpu=1010.06ms elapsed=5985.40s tid=0x00007e7da800e980 nid=233 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.556844410Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.556945123Z "GC Thread#3" os_prio=0 cpu=1013.40ms elapsed=5985.86s tid=0x00007e7da80155a0 nid=228 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.556952585Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.557046305Z "GC Thread#2" os_prio=0 cpu=1013.63ms elapsed=5985.90s tid=0x00007e7da8001b50 nid=225 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.557054800Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.557081929Z "GC Thread#1" os_prio=0 cpu=1001.48ms elapsed=5985.91s tid=0x00007e7da8000fd0 nid=224 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.557086825Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.557088923Z "VM Thread" os_prio=0 cpu=354.81ms elapsed=5986.06s tid=0x00007e7e3427a1c0 nid=212 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.557091593Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.557094553Z "VM Periodic Task Thread" os_prio=0 cpu=4390.74ms elapsed=5986.07s tid=0x00007e7e34268900 nid=211 waiting on condition  
+legacy-bridge-1  | 2026-08-01T20:02:09.557096846Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.557098893Z "G1 Service" os_prio=0 cpu=218.44ms elapsed=5986.10s tid=0x00007e7e341b5c00 nid=210 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.557102066Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.557111258Z "G1 Refine#0" os_prio=0 cpu=4442.39ms elapsed=5986.10s tid=0x00007e7e341b4bf0 nid=209 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.557113751Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.557241502Z "G1 Conc#0" os_prio=0 cpu=4555.65ms elapsed=5986.10s tid=0x00007e7e34108760 nid=208 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.557271193Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.557319095Z "G1 Main Marker" os_prio=0 cpu=6.11ms elapsed=5986.10s tid=0x00007e7e34107770 nid=207 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.557326836Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.557483427Z "GC Thread#0" os_prio=0 cpu=1015.40ms elapsed=5986.10s tid=0x00007e7e340fc0e0 nid=206 runnable  
+legacy-bridge-1  | 2026-08-01T20:02:09.557518057Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.557669415Z JNI global refs: 2517, weak refs: 0
+legacy-bridge-1  | 2026-08-01T20:02:09.557675592Z 
+legacy-bridge-1  | 2026-08-01T20:02:09.557984008Z Heap
+legacy-bridge-1  | 2026-08-01T20:02:09.557992508Z  garbage-first heap   total 2908160K, used 2170962K [0x0000000580000000, 0x0000000800000000)
+legacy-bridge-1  | 2026-08-01T20:02:09.557994904Z   region size 8192K, 61 young (499712K), 1 survivors (8192K)
+legacy-bridge-1  | 2026-08-01T20:02:09.558210509Z  Metaspace       used 15406K, committed 15744K, reserved 1114112K
+legacy-bridge-1  | 2026-08-01T20:02:09.558218644Z   class space    used 1129K, committed 1280K, reserved 1048576K
+legacy-bridge-1  | 2026-08-01T20:02:09.558221163Z 

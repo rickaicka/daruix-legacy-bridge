@@ -2,11 +2,23 @@ from fastapi import Depends, FastAPI, HTTPException, Query, status
 
 from app.dependencies import get_repository
 from app.legacy.connection import LegacyDatabaseUnavailable
-from app.legacy.repository import LegacyRepository
-from app.schemas import AuthenticationRequest, AuthenticationResponse, ClientResponse, WorkResponse
+from app.legacy.repository import (
+    LegacyColumnNotFound,
+    LegacyRepository,
+    LegacyResourceNotFound,
+    LegacyTableNotFound,
+)
+from app.schemas import (
+    AuthenticationRequest,
+    AuthenticationResponse,
+    ClientResponse,
+    LegacyTableInfoResponse,
+    LegacyTablePageResponse,
+    WorkResponse,
+)
 from app.security import require_service_auth
 
-app = FastAPI(title="Daruix Legacy Bridge", version="0.1.0", docs_url=None, redoc_url=None)
+app = FastAPI(title="Daruix Legacy Bridge", version="0.2.0", docs_url=None, redoc_url=None)
 
 
 @app.exception_handler(LegacyDatabaseUnavailable)
@@ -58,3 +70,57 @@ def work(work_id: int, repository: LegacyRepository = Depends(get_repository)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Obra não encontrada.")
     return result
 
+
+@app.get(
+    "/v1/budgeting/tables",
+    response_model=list[LegacyTableInfoResponse],
+    dependencies=[Depends(require_service_auth)],
+)
+def budgeting_tables(repository: LegacyRepository = Depends(get_repository)):
+    return repository.list_budgeting_tables()
+
+
+@app.get(
+    "/v1/budgeting/{resource}",
+    response_model=LegacyTablePageResponse,
+    dependencies=[Depends(require_service_auth)],
+)
+def budgeting_table(
+    resource: str,
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=500),
+    search: str = Query(default="", max_length=255),
+    filter_column: str = Query(default="", max_length=255),
+    filter_value: str = Query(default="", max_length=500),
+    repository: LegacyRepository = Depends(get_repository),
+):
+    if bool(filter_column.strip()) != bool(filter_value.strip()):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="filter_column e filter_value devem ser enviados juntos.",
+        )
+
+    try:
+        return repository.list_budgeting_table(
+            resource=resource.strip(),
+            offset=offset,
+            limit=limit,
+            search=search.strip(),
+            filter_column=filter_column.strip(),
+            filter_value=filter_value.strip(),
+        )
+    except LegacyResourceNotFound as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+    except LegacyTableNotFound as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+    except LegacyColumnNotFound as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error),
+        ) from error

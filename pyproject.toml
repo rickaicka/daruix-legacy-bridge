@@ -7,7 +7,7 @@ dependencies = [
   "fastapi==0.116.1",
   "uvicorn[standard]==0.35.0",
   "pydantic-settings==2.10.1",
-  "JayDeBeApi==1.2.3",
+  "JPype1",
 ]
 
 [project.optional-dependencies]

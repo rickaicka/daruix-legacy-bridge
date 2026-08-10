@@ -1,12 +1,24 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>br.com.daruix</groupId><artifactId>legacy-bridge-drivers</artifactId><version>1.0</version>
+
+  <groupId>br.com.daruix</groupId>
+  <artifactId>legacy-bridge-drivers</artifactId>
+  <version>1.0</version>
+
   <dependencies>
     <dependency>
-    <groupId>io.github.spannm</groupId>
-    <artifactId>ucanaccess</artifactId>
-    <version>5.1.6</version>
-</dependency>
+      <groupId>com.healthmarketscience.jackcess</groupId>
+      <artifactId>jackcess</artifactId>
+      <version>4.0.11</version>
+    </dependency>
+
+    <!-- Necessário somente quando LEGACY_DB_PASSWORD não estiver vazio. -->
+    <dependency>
+      <groupId>com.healthmarketscience.jackcess</groupId>
+      <artifactId>jackcess-encrypt</artifactId>
+      <version>4.0.2</version>
+    </dependency>
   </dependencies>
 </project>
-

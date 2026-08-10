@@ -2,11 +2,18 @@ services:
   legacy-bridge:
     build: .
     restart: unless-stopped
+
     env_file:
       - .env
 
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms1g -Xmx10g -XX:+ExitOnOutOfMemoryError"
+
     volumes:
       - ./local-data:/legacy-db:ro
+
+    tmpfs:
+      - /tmp:size=512m,mode=1777
 
     ports:
       - "8100:8100"
@@ -23,9 +30,6 @@ services:
       start_period: 30s
 
     read_only: true
-
-    tmpfs:
-      - /tmp
 
     security_opt:
       - no-new-privileges:true
