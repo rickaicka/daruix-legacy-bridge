@@ -10,14 +10,37 @@ O front-end nunca chama este serviço diretamente. A porta `8100` deve ser vincu
 
 ## Endpoints
 
+### Descoberta comercial e de propostas
+
+`GET /v1/commercial/tables` consulta uma lista fechada de tabelas permitidas e
+retorna, para cada recurso, o nome real encontrado no Access, quantidade de
+linhas, colunas e possíveis nomes semelhantes. Além dos catálogos de clientes,
+o levantamento inclui propostas, serviços solicitados, contatos da proposta,
+parcelas, planos de pagamento, tipos de proposta, divisões, departamentos,
+projetos, obras e usuários.
+
+Este endpoint é somente de metadados. O consumidor nunca envia diretamente um
+nome de tabela do Access.
+
+Os recursos de propostas podem ser lidos de forma paginada por
+`GET /v1/commercial/{resource}`. São aceitos `offset`, `limit`, `search` e o par
+`filter_column`/`filter_value`. Apenas recursos presentes na lista fechada
+`PROPOSAL_TABLES` podem devolver linhas. `T_Usuario` nunca é exposta por esse
+endpoint porque contém credenciais legadas.
+
 Todos, exceto `/health/live`, exigem `Authorization: Bearer <BRIDGE_SERVICE_TOKEN>` e IP permitido.
 
 - `GET /health/live`
 - `GET /health/ready`
 - `POST /v1/authenticate`
 - `GET /v1/clients?search=&limit=100`
+- `GET /v1/clients/catalog`
 - `GET /v1/works?client_name=&client_document=&search=&limit=100`
 - `GET /v1/works/{id}`
+- `GET /v1/commercial/tables`
+- `GET /v1/commercial/{resource}`
+- `GET /v1/business-segments`
+- `GET /v1/company-types`
 
 ## Executar os testes
 
@@ -61,4 +84,3 @@ O cliente HTTP do BFF deve continuar expondo ao Angular os endpoints Django atua
 - O acesso é protegido por token, allowlist de IP, WireGuard e firewall.
 - A comparação de senha em texto puro existe apenas por compatibilidade temporária com o Access legado.
 - O `uvicorn` inicia sem access log para evitar registros desnecessários das rotas.
-

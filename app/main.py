@@ -11,20 +11,36 @@ from app.legacy.repository import (
 from app.schemas import (
     AuthenticationRequest,
     AuthenticationResponse,
+    BudgetStageCatalogItemResponse,
+    ClientCatalogItemResponse,
     ClientResponse,
+    CommercialCatalogItemResponse,
     LegacyTableInfoResponse,
     LegacyTablePageResponse,
+    SupplyGroupResponse,
     WorkResponse,
 )
 from app.security import require_service_auth
 
-app = FastAPI(title="Daruix Legacy Bridge", version="0.2.0", docs_url=None, redoc_url=None)
+app = FastAPI(
+    title="Daruix Legacy Bridge",
+    version="0.5.0",
+    docs_url=None,
+    redoc_url=None,
+)
 
 
 @app.exception_handler(LegacyDatabaseUnavailable)
 async def database_unavailable_handler(_, error: LegacyDatabaseUnavailable):
     from fastapi.responses import JSONResponse
-    return JSONResponse(status_code=503, content={"detail": str(error), "code": "legacy_database_unavailable"})
+
+    return JSONResponse(
+        status_code=503,
+        content={
+            "detail": str(error),
+            "code": "legacy_database_unavailable",
+        },
+    )
 
 
 @app.get("/health/live")
@@ -38,12 +54,23 @@ def readiness(repository: LegacyRepository = Depends(get_repository)):
     return {"status": "ok", "database": "reachable"}
 
 
-@app.post("/v1/authenticate", response_model=AuthenticationResponse, dependencies=[Depends(require_service_auth)])
-def authenticate(payload: AuthenticationRequest, repository: LegacyRepository = Depends(get_repository)):
+@app.post(
+    "/v1/authenticate",
+    response_model=AuthenticationResponse,
+    dependencies=[Depends(require_service_auth)],
+)
+def authenticate(
+    payload: AuthenticationRequest,
+    repository: LegacyRepository = Depends(get_repository),
+):
     return repository.authenticate(payload.username, payload.password)
 
 
-@app.get("/v1/clients", response_model=list[ClientResponse], dependencies=[Depends(require_service_auth)])
+@app.get(
+    "/v1/clients",
+    response_model=list[ClientResponse],
+    dependencies=[Depends(require_service_auth)],
+)
 def clients(
     search: str = Query(default="", max_length=120),
     limit: int = Query(default=100, ge=1, le=500),
@@ -52,7 +79,20 @@ def clients(
     return repository.list_clients(search.strip(), limit)
 
 
-@app.get("/v1/works", response_model=list[WorkResponse], dependencies=[Depends(require_service_auth)])
+@app.get(
+    "/v1/clients/catalog",
+    response_model=list[ClientCatalogItemResponse],
+    dependencies=[Depends(require_service_auth)],
+)
+def client_catalog(repository: LegacyRepository = Depends(get_repository)):
+    return repository.list_client_catalog()
+
+
+@app.get(
+    "/v1/works",
+    response_model=list[WorkResponse],
+    dependencies=[Depends(require_service_auth)],
+)
 def works(
     client_name: str = Query(default="", max_length=255),
     client_document: str = Query(default="", max_length=30),
@@ -60,14 +100,29 @@ def works(
     limit: int = Query(default=100, ge=1, le=500),
     repository: LegacyRepository = Depends(get_repository),
 ):
-    return repository.list_works(client_name.strip(), client_document.strip(), search.strip(), limit)
+    return repository.list_works(
+        client_name.strip(),
+        client_document.strip(),
+        search.strip(),
+        limit,
+    )
 
 
-@app.get("/v1/works/{work_id}", response_model=WorkResponse, dependencies=[Depends(require_service_auth)])
-def work(work_id: int, repository: LegacyRepository = Depends(get_repository)):
+@app.get(
+    "/v1/works/{work_id}",
+    response_model=WorkResponse,
+    dependencies=[Depends(require_service_auth)],
+)
+def work(
+    work_id: int,
+    repository: LegacyRepository = Depends(get_repository),
+):
     result = repository.get_work(work_id)
     if result is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Obra não encontrada.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Obra não encontrada.",
+        )
     return result
 
 
@@ -79,6 +134,116 @@ def work(work_id: int, repository: LegacyRepository = Depends(get_repository)):
 def budgeting_tables(repository: LegacyRepository = Depends(get_repository)):
     return repository.list_budgeting_tables()
 
+
+@app.get(
+    "/v1/supply-groups",
+    response_model=list[SupplyGroupResponse],
+    dependencies=[Depends(require_service_auth)],
+)
+def supply_groups(repository: LegacyRepository = Depends(get_repository)):
+    return repository.list_supply_groups()
+
+
+@app.get(
+    "/v1/commercial/tables",
+    response_model=list[LegacyTableInfoResponse],
+    dependencies=[Depends(require_service_auth)],
+)
+def commercial_tables(repository: LegacyRepository = Depends(get_repository)):
+    return repository.list_commercial_tables()
+
+
+@app.get(
+    "/v1/commercial/{resource}",
+    response_model=LegacyTablePageResponse,
+    dependencies=[Depends(require_service_auth)],
+)
+def commercial_table(
+    resource: str,
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=500),
+    search: str = Query(default="", max_length=255),
+    filter_column: str = Query(default="", max_length=255),
+    filter_value: str = Query(default="", max_length=500),
+    repository: LegacyRepository = Depends(get_repository),
+):
+    if bool(filter_column.strip()) != bool(filter_value.strip()):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="filter_column e filter_value devem ser enviados juntos.",
+        )
+
+    try:
+        return repository.list_commercial_table(
+            resource=resource.strip(),
+            offset=offset,
+            limit=limit,
+            search=search.strip(),
+            filter_column=filter_column.strip(),
+            filter_value=filter_value.strip(),
+        )
+    except LegacyResourceNotFound as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+    except LegacyTableNotFound as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+    except LegacyColumnNotFound as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error),
+        ) from error
+
+
+@app.get(
+    "/v1/business-segments",
+    response_model=list[CommercialCatalogItemResponse],
+    dependencies=[Depends(require_service_auth)],
+)
+def business_segments(repository: LegacyRepository = Depends(get_repository)):
+    try:
+        return repository.list_business_segments()
+    except (LegacyTableNotFound, LegacyColumnNotFound) as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+
+
+@app.get(
+    "/v1/company-types",
+    response_model=list[CommercialCatalogItemResponse],
+    dependencies=[Depends(require_service_auth)],
+)
+def company_types(repository: LegacyRepository = Depends(get_repository)):
+    try:
+        return repository.list_company_types()
+    except (LegacyTableNotFound, LegacyColumnNotFound) as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+
+
+@app.get(
+    "/v1/budgeting/stage-catalog",
+    response_model=list[BudgetStageCatalogItemResponse],
+    dependencies=[Depends(require_service_auth)],
+)
+def budget_stage_catalog(
+    repository: LegacyRepository = Depends(get_repository),
+):
+    try:
+        return repository.list_budget_stage_catalog()
+    except LegacyTableNotFound as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
 
 @app.get(
     "/v1/budgeting/{resource}",

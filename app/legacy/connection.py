@@ -3,6 +3,7 @@ from glob import glob
 from pathlib import Path
 from threading import Lock
 import logging
+from typing import Any, Iterator
 
 import jpype
 import jpype.imports
@@ -39,72 +40,97 @@ class AccessConnectionFactory:
         if jpype.isJVMStarted():
             return
 
-        # O nome da configuração foi preservado para evitar uma alteração
-        # simultânea em Settings. Agora o glob deve apontar para os JARs do
-        # Jackcess e suas dependências, não para o UCanAccess.
-        jars = sorted(glob(self.settings.ucanaccess_classpath))
+        jars = sorted(
+            glob(
+                self.settings.ucanaccess_classpath
+            )
+        )
+
         if not jars:
             raise LegacyDatabaseUnavailable(
                 "Drivers Jackcess não encontrados."
             )
 
         with self._jvm_lock:
-            if not jpype.isJVMStarted():
-                logger.info(
-                    "Iniciando JVM com %d arquivo(s) JAR do Jackcess.",
-                    len(jars),
-                )
-                jpype.startJVM(classpath=jars, convertStrings=True)
+            if jpype.isJVMStarted():
+                return
 
-    @contextmanager
-    def connect(self):
-        path = self.validate()
-        database = None
+            logger.info(
+                "Iniciando JVM com %d arquivo(s) JAR do Jackcess.",
+                len(jars),
+            )
+
+            try:
+                jpype.startJVM(
+                    classpath=jars,
+                    convertStrings=True,
+                )
+
+            except Exception as error:
+                logger.exception(
+                    "Falha ao iniciar JVM para acesso ao banco legado."
+                )
+
+                raise LegacyDatabaseUnavailable(
+                    "Não foi possível iniciar a JVM para acessar "
+                    "o banco Access legado."
+                ) from error
+
+    def _open_database(
+        self,
+        path: Path,
+    ) -> Any:
+        self._start_jvm()
 
         try:
-            self._start_jvm()
-
             DatabaseBuilder = jpype.JClass(
                 "com.healthmarketscience.jackcess.DatabaseBuilder"
             )
-            File = jpype.JClass("java.io.File")
 
-            builder = DatabaseBuilder(File(str(path)))
-            builder.setReadOnly(True)
-            builder.setAutoSync(False)
+            File = jpype.JClass(
+                "java.io.File"
+            )
 
-            password = self.settings.legacy_db_password.get_secret_value()
-            if password:
-                try:
-                    CryptCodecProvider = jpype.JClass(
-                        "com.healthmarketscience.jackcess.crypt.CryptCodecProvider"
-                    )
-                except Exception as error:
-                    raise LegacyDatabaseUnavailable(
-                        "O banco possui senha, mas jackcess-encrypt não está disponível."
-                    ) from error
-                builder.setCodecProvider(CryptCodecProvider(password))
-
-            logger.info("Abrindo banco Access legado em %s com Jackcess.", path)
-            database = builder.open()
-            yield database
+            return DatabaseBuilder.open(
+                File(str(path))
+            )
 
         except LegacyDatabaseUnavailable:
             raise
+
         except Exception as error:
             logger.exception(
-                "Falha ao abrir ou utilizar o banco Access legado em %s.",
+                "Falha ao abrir banco Access com Jackcess em %s.",
                 path,
             )
+
             raise LegacyDatabaseUnavailable(
-                "Não foi possível abrir o banco Access legado."
+                "Não foi possível abrir o banco Access legado: "
+                f"{path}"
             ) from error
 
+    @contextmanager
+    def connect(
+        self,
+    ) -> Iterator[Any]:
+        path = self.validate()
+
+        # Apenas falhas de abertura são convertidas para
+        # LegacyDatabaseUnavailable. Erros do repository durante
+        # o yield atravessam normalmente até o handler correto.
+        database = self._open_database(
+            path
+        )
+
+        try:
+            yield database
+
         finally:
-            if database is not None:
-                try:
-                    database.close()
-                except Exception:
-                    logger.exception(
-                        "Falha ao fechar o banco Access legado."
-                    )
+            try:
+                database.close()
+
+            except Exception:
+                logger.exception(
+                    "Falha ao fechar o banco Access legado em %s.",
+                    path,
+                )

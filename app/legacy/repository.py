@@ -1,3 +1,4 @@
+import hashlib
 import hmac
 import re
 import unicodedata
@@ -17,6 +18,9 @@ WORK_TABLE = "Cadastro Obra"
 # do banco Access.
 LEGACY_TABLES: dict[str, tuple[str, ...]] = {
     "supplies": ("tblInsumos",),
+    "supply-groups": (
+        "tblGrupoDeMaterial",
+    ),
     "service-compositions": ("tblComposicaoDeServico",),
     # O primeiro nome foi informado no requisito. O segundo é o nome que
     # aparece no catálogo real do Access enviado para análise.
@@ -25,9 +29,208 @@ LEGACY_TABLES: dict[str, tuple[str, ...]] = {
         "tblItemDaComposicaoDeServico",
     ),
     "budget-sheets": ("tblPlanilhaDeOrcamento",),
-    "budget-sheet-stages": ("tblEtapaDaPlanilha",),
-    "budget-sheet-stage-items": ("tblItemDaEtapaDaPlanilha",),
+
+    # Catálogos que alimentam as etapas no legado.
+    # Permanecem separados no bridge para preservar a origem dos dados.
+    "work-cost-centers": (
+        "tblCentroDeCustoObra",
+    ),
+    "administrative-cost-centers": (
+        "tblCentroDeCustoAdm",
+    ),
+
+    # Possível estrutura de itens vinculados ao centro de custo.
+    "cost-center-compositions": (
+        "tblComposicaoDoCentroDeCusto",
+    ),
+    "cost-center-composition-items": (
+        "tblItemDaComposicaoDoCentroDeCusto",
+    ),
+    "cost-center-items": (
+        "tblItemDoCentroDeCusto",
+    ),
+
+    # Catálogo reutilizável de etapas.
+    "stages": ("tblEtapaDaObra",),
+
+    # Itens cadastrados originalmente para uma etapa.
+    "stage-items": ("tblitemDaEtapaDaObra",),
+
+    # Etapas efetivamente selecionadas em cada planilha.
+    "budget-sheet-stages": (
+        "tblitemDaPlanilhaDeOrcamento",
+    ),
+
+    # Itens efetivamente incluídos na etapa da planilha.
+    "budget-sheet-stage-items": (
+        "tblSubitemDaPlanilhaDeOrcamento",
+    ),
+
     "measurement-units": ("tblUnidadeDeMedida",),
+}
+
+COMMERCIAL_TABLES: dict[str, tuple[str, ...]] = {
+    "business-segments": (
+        "Ramo Empresarial",
+        "RamoEmpresarial",
+        "Cadastro Ramo Empresarial",
+        "tblRamoEmpresarial",
+        "tblRamoDeAtividade",
+    ),
+    "company-types": (
+        "Tipo de Empresa",
+        "Tipo Empresa",
+        "Tipo Cliente",
+        "Tipo_Cliente",
+        "tblTipoDeEmpresa",
+        "tblTipoCliente",
+        # No banco atual não existe uma tabela mestre própria para tipos.
+        # Os valores distintos vêm da coluna Tipo_Empresa do cadastro de clientes.
+        "tblCadastroDeCliente",
+    ),
+    "clients": (
+        "tblCadastroDeCliente",
+        "Cadastro de Cliente",
+        "Cadastro de Cliente1",
+        "Cadastro de Cliente2",
+    ),
+    # Recursos abaixo são inicialmente usados para descoberta controlada do
+    # esquema de propostas. O catálogo retorna o nome real, colunas e tabelas
+    # semelhantes sem permitir que o consumidor informe nomes arbitrários.
+    "proposals": (
+        "tblCadastroDeProposta",
+        "tblCadastroDePropostas",
+        "tblProposta",
+        "tblPropostas",
+        "Cadastro de Proposta",
+        "Cadastro de Propostas",
+        "Cadastro Proposta",
+        "Cadastro Propostas",
+        "Proposta",
+        "Propostas",
+    ),
+    "proposal-requested-services": (
+        "tblProjetoProposta",
+        "tblServicoSolicitadoDaProposta",
+        "tblServicosSolicitadosDaProposta",
+        "tblPropostaServico",
+        "tblPropostaServicos",
+        "Serviços Solicitados",
+        "Servicos Solicitados",
+        "Serviços Solicitados Proposta",
+        "Servicos Solicitados Proposta",
+    ),
+    "proposal-contacts": (
+        "tblContatoProposta",
+        "tblContatosProposta",
+        "Contato Proposta",
+        "Contatos Proposta",
+    ),
+    "proposal-payment-installments": (
+        "tblPagamentoParceladoProjetos",
+        "tblPlanoDePagamentoProjeto",
+        "tblPlanoDePagamentoProjetos",
+        "tblParcelaDaProposta",
+        "tblParcelasDaProposta",
+        "Plano de Pagamento Projetos",
+        "Plano Pagamento Projetos",
+        "Parcelas da Proposta",
+    ),
+    "proposal-payment-plans": (
+        "plano_pagamento",
+        "tblPlanoPagamento",
+        "tblPlanosPagamento",
+        "Plano de Pagamento",
+        "Planos de Pagamento",
+    ),
+    "proposal-types": (
+        "tblTipoDeProposta",
+        "tblTiposDeProposta",
+        "Tipo de Proposta",
+        "Tipos de Proposta",
+        "Proposta Tipo",
+    ),
+    "divisions": (
+        "tblDivisao",
+        "tblDivisoes",
+        "Divisão",
+        "Divisao",
+        "Divisões",
+        "Divisoes",
+    ),
+    "departments": (
+        "tblDepartamento",
+        "tblDepartamentos",
+        "Departamento",
+        "Departamentos",
+    ),
+    "projects": (
+        "tblProjeto",
+        "tblProjetos",
+        "Cadastro de Projeto",
+        "Cadastro de Projetos",
+        "Projeto",
+        "Projetos",
+    ),
+    "works": (WORK_TABLE,),
+    "users": (USER_TABLE,),
+}
+CLIENT_TABLE = "tblCadastroDeCliente"
+
+COMMERCIAL_COLUMN_ALIASES: dict[str, dict[str, tuple[str, ...]]] = {
+    "business-segments": {
+        "legacy_id": (
+            "ramoEmpresarialID",
+            "ramoID",
+            "idRamo",
+        ),
+        "name": (
+            "Ramo Empresarial",
+            "Ramo  Empresarial",
+            "ramoEmpresarialNome",
+            "ramoNome",
+            "ramoEmpresarial",
+            "descricao",
+            "nome",
+            "ramo",
+        ),
+    },
+    "company-types": {
+        "legacy_id": (
+            "tipoEmpresaID",
+            "tipoClienteID",
+            "idTipoEmpresa",
+            "idTipoCliente",
+        ),
+        "name": (
+            "Tipo de Empresa",
+            "Tipo  de Empresa",
+            "tipoEmpresaNome",
+            "tipoClienteNome",
+            "tipoEmpresa",
+            "tipoCliente",
+            "tipo_empresa",
+            "tipo_cliente",
+            "descricao",
+        ),
+    },
+}
+
+# Subconjunto que pode devolver linhas brutas para o importador do BFF. A
+# tabela T_Usuario fica deliberadamente fora desta lista porque contém senha
+# legada. Ela participa apenas da descoberta de metadados.
+PROPOSAL_TABLES: dict[str, tuple[str, ...]] = {
+    resource: COMMERCIAL_TABLES[resource]
+    for resource in (
+        "proposals",
+        "proposal-requested-services",
+        "proposal-contacts",
+        "proposal-payment-installments",
+        "proposal-payment-plans",
+        "proposal-types",
+        "departments",
+        "projects",
+    )
 }
 
 
@@ -49,6 +252,59 @@ def text(value: Any) -> str:
 
 def display_text(value: Any) -> str:
     return " ".join(text(value).split())
+
+
+def repair_legacy_text(value: Any) -> str:
+    value = display_text(value)
+
+    if not value:
+        return ""
+
+    # O Access possui dados misturados: alguns já estão Unicode corretos
+    # e outros são UTF-8 interpretados como Latin-1/Windows-1252.
+    # Só tenta reparar quando existem sinais típicos de mojibake.
+    markers = (
+        "Ã",
+        "Â",
+        "â€",
+        "â€™",
+        "â€œ",
+        "â€\x9d",
+        "�",
+    )
+
+    if not any(marker in value for marker in markers):
+        return value
+
+    candidates = [value]
+
+    for encoding in ("latin1", "cp1252"):
+        try:
+            candidates.append(
+                value.encode(encoding).decode("utf-8")
+            )
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            pass
+
+    def score(candidate: str) -> tuple[int, int]:
+        mojibake_count = sum(
+            candidate.count(marker)
+            for marker in markers
+        )
+
+        replacement_count = candidate.count("�")
+
+        return mojibake_count, replacement_count
+
+    return min(candidates, key=score)
+
+def normalized_document(value: Any) -> str:
+    digits = document_key(value)
+
+    if len(digits) not in (11, 14):
+        return ""
+
+    return digits
 
 
 def document_key(value: Any) -> str:
@@ -87,6 +343,21 @@ def normalized_search(value: Any) -> str:
     )
 
     return normalized.strip()
+
+
+def catalog_legacy_key(
+    resource: str,
+    *,
+    legacy_id: int | None,
+    name: str,
+) -> str:
+    """Identidade técnica estável; nunca é usada como FK no Hub."""
+    identity = (
+        f"id:{legacy_id}"
+        if legacy_id is not None
+        else f"name:{normalize_company_name(name)}"
+    )
+    return hashlib.sha256(f"{resource}|{identity}".encode("utf-8")).hexdigest()
 
 
 def integer(value: Any) -> int | None:
@@ -226,15 +497,8 @@ class LegacyRepository:
         # Nunca registrar esses valores em logs.
         return hmac.compare_digest(stored, supplied)
 
-    def list_clients(
-        self,
-        search: str,
-        limit: int,
-    ) -> list[dict]:
+    def _collect_clients(self, search: str = "") -> list[dict[str, str]]:
         search = search.strip()
-
-        # A chave será prioritariamente o CNPJ.
-        # Quando não houver CNPJ, será usado o nome normalizado.
         unique_clients: dict[str, dict[str, str]] = {}
 
         with self.factory.connect() as database:
@@ -256,37 +520,188 @@ class LegacyRepository:
 
                 normalized_document = document_key(document)
                 normalized_name = normalize_company_name(name)
+                identity = (
+                    f"document:{normalized_document}"
+                    if normalized_document
+                    else f"name:{normalized_name}"
+                )
 
-                if normalized_document:
-                    key = f"document:{normalized_document}"
-                else:
-                    key = f"name:{normalized_name}"
-
-                existing_client = unique_clients.get(key)
-
+                existing_client = unique_clients.get(identity)
                 if existing_client is None:
-                    unique_clients[key] = {
+                    unique_clients[identity] = {
                         "name": name,
                         "document": document,
                     }
                     continue
 
-                # Caso o primeiro registro esteja sem documento e outro
-                # equivalente possua documento, preserva o documento.
-                if (
-                    document
-                    and not existing_client["document"]
-                ):
+                if document and not existing_client.get("document"):
                     existing_client["document"] = document
 
-        clients = sorted(
+        return sorted(
             unique_clients.values(),
-            key=lambda client: normalize_company_name(
-                client["name"]
-            ),
+            key=lambda item: (normalize_company_name(item["name"]), document_key(item["document"])),
         )
 
-        return clients[:limit]
+    def list_clients(
+        self,
+        search: str,
+        limit: int,
+    ) -> list[dict]:
+        search = search.strip()
+        catalog = self.list_client_catalog()
+
+        if search:
+            catalog = [
+                client
+                for client in catalog
+                if (
+                    contains(client["name"], search)
+                    or contains(client["trade_name"], search)
+                    or contains(client["document"], search)
+                )
+            ]
+
+        return [
+            {"name": client["name"], "document": client["document"]}
+            for client in catalog[:limit]
+        ]
+
+    def list_client_catalog(self) -> list[dict]:
+        clients: list[dict] = []
+
+        with self.factory.connect() as database:
+            table = database.getTable(CLIENT_TABLE)
+
+            for row in table:
+                legacy_id = integer(
+                    row.get("clienteID")
+                )
+
+                name = (
+                        repair_legacy_text(
+                            row.get("RAZAOSOCIAL")
+                        )
+                        or repair_legacy_text(
+                    row.get("nome fantasia")
+                )
+                )
+
+                document_raw = (
+                        display_text(row.get("CNPJ/CPF"))
+                        or display_text(row.get("cnpj"))
+                        or display_text(row.get("cpff"))
+                )
+
+                document = normalized_document(
+                    document_raw
+                )
+
+                company_type_name = repair_legacy_text(
+                    row.get("Tipo_Empresa")
+                )
+
+                business_segment_name = repair_legacy_text(
+                    row.get("Ramo Empresarial c")
+                )
+
+                if legacy_id is None or not name:
+                    continue
+
+                trade_name = repair_legacy_text(
+                    row.get("nome fantasia")
+                )
+
+                address = repair_legacy_text(
+                    row.get("Endereco")
+                )
+
+                district = repair_legacy_text(
+                    row.get("Bairro")
+                )
+
+                city = repair_legacy_text(
+                    row.get("Cidade")
+                )
+
+                state = repair_legacy_text(
+                    row.get("Estado")
+                )
+
+                postal_code = repair_legacy_text(
+                    row.get("CEP")
+                )
+
+                phone = repair_legacy_text(
+                    row.get("Telefone")
+                )
+
+                email = repair_legacy_text(
+                    row.get("Email empresarial")
+                )
+
+                website = repair_legacy_text(
+                    row.get("Homepage")
+                )
+
+                clients.append(
+                    {
+                        "legacy_id": legacy_id,
+                        "legacy_key": catalog_legacy_key(
+                            "clients",
+                            legacy_id=legacy_id,
+                            name=name,
+                        ),
+                        "name": name,
+                        "trade_name": trade_name,
+                        "document": document,
+                        "company_type_name": company_type_name,
+                        "business_segment_name": business_segment_name,
+                        "address": address,
+                        "district": district,
+                        "city": city,
+                        "state": state,
+                        "postal_code": postal_code,
+                        "phone": phone,
+                        "email": email,
+                        "website": website,
+                        "legacy_payload": {
+                            "document_raw": document_raw,
+                            "proprietario": repair_legacy_text(
+                                row.get("Proprietario")
+                            ),
+                            "ie_rg": repair_legacy_text(
+                                row.get("IE/RG")
+                            ),
+                            "newsletter": json_value(
+                                row.get("Newsletter")
+                            ),
+                            "pendencias": json_value(
+                                row.get("Pendencias")
+                            ),
+                            "indicado_por": repair_legacy_text(
+                                row.get("Indicado por")
+                            ),
+                            "address": address,
+                            "district": district,
+                            "city": city,
+                            "state": state,
+                            "postal_code": postal_code,
+                            "phone": phone,
+                            "email": email,
+                        },
+                    }
+                )
+
+        clients.sort(
+            key=lambda item: (
+                normalize_company_name(
+                    item["name"]
+                ),
+                item["legacy_id"],
+            )
+        )
+
+        return clients
 
     def list_works(
         self,
@@ -345,8 +760,107 @@ class LegacyRepository:
 
         return None
 
+    def list_budget_stage_catalog(self) -> list[dict]:
+        """
+        Unifica os centros de custo operacionais e administrativos
+        utilizados como etapas de orçamento no legado.
+
+        A identidade legada é composta por origem + ID. O BFF criará
+        suas próprias PKs para os relacionamentos internos.
+        """
+        source_definitions = (
+            {
+                "resource": "work-cost-centers",
+                "legacy_source": "WORK_COST_CENTER",
+                "category": "OPERATIONAL",
+                "id_column": "id",
+                "code_column": "codigocc",
+                "name_column": "nomecc",
+            },
+            {
+                "resource": "administrative-cost-centers",
+                "legacy_source": "ADMINISTRATIVE_COST_CENTER",
+                "category": "ADMINISTRATIVE",
+                "id_column": "CentroDeCustoAdmID",
+                "code_column": None,
+                "name_column": "CentroDeCustoNome",
+            },
+        )
+
+        stages: list[dict] = []
+
+        with self.factory.connect() as database:
+            available_names = self._table_names(database)
+
+            for definition in source_definitions:
+                resource = definition["resource"]
+                expected_names = LEGACY_TABLES[resource]
+
+                table_name = self._resolve_table_name(
+                    available_names,
+                    expected_names,
+                )
+
+                if table_name is None:
+                    raise LegacyTableNotFound(
+                        "Nenhuma das tabelas Access esperadas foi encontrada: "
+                        + ", ".join(expected_names)
+                    )
+
+                table = database.getTable(table_name)
+
+                for row in table:
+                    legacy_id = integer(
+                        row.get(definition["id_column"])
+                    )
+                    name = repair_legacy_text(
+                        row.get(definition["name_column"])
+                    )
+
+                    code_column = definition["code_column"]
+                    code = (
+                        repair_legacy_text(row.get(code_column))
+                        if code_column
+                        else ""
+                    )
+
+                    if legacy_id is None or not name:
+                        continue
+
+                    stages.append(
+                        {
+                            "legacy_id": legacy_id,
+                            "legacy_key": catalog_legacy_key(
+                                resource,
+                                legacy_id=legacy_id,
+                                name=name,
+                            ),
+                            "legacy_source": definition["legacy_source"],
+                            "code": code or None,
+                            "name": name,
+                            "category": definition["category"],
+                            "is_active": True,
+                            "legacy_payload": {
+                                "table_name": table_name,
+                                "legacy_id": legacy_id,
+                                "code": code or None,
+                                "name": name,
+                            },
+                        }
+                    )
+
+        stages.sort(
+            key=lambda stage: (
+                stage["category"],
+                normalized_search(stage["name"]),
+                stage["legacy_id"],
+            )
+        )
+
+        return stages
+
     def list_budgeting_tables(self) -> list[dict]:
-        """Descreve as sete tabelas permitidas e informa quais existem."""
+        """Descreve as tabelas de orçamento permitidas e informa quais existem."""
         with self.factory.connect() as database:
             available_names = self._table_names(database)
             catalog: list[dict] = []
@@ -389,6 +903,73 @@ class LegacyRepository:
 
         return catalog
 
+    def list_commercial_tables(self) -> list[dict]:
+        """Descreve somente os catálogos comerciais permitidos."""
+        with self.factory.connect() as database:
+            return self._table_catalog(database, COMMERCIAL_TABLES)
+
+    def list_business_segments(self) -> list[dict]:
+        return self._list_commercial_catalog("business-segments")
+
+    def list_company_types(self) -> list[dict]:
+        return self._list_commercial_catalog("company-types")
+
+    def _list_commercial_catalog(self, resource: str) -> list[dict]:
+        expected_names = COMMERCIAL_TABLES[resource]
+        aliases = COMMERCIAL_COLUMN_ALIASES[resource]
+
+        with self.factory.connect() as database:
+            available_names = self._table_names(database)
+            table_name = self._resolve_table_name(available_names, expected_names)
+            if table_name is None:
+                similar = self._similar_table_names(available_names.values(), expected_names)
+                suffix = f" Tabelas semelhantes: {', '.join(similar)}." if similar else ""
+                raise LegacyTableNotFound(
+                    "Nenhuma das tabelas Access esperadas foi encontrada: "
+                    + ", ".join(expected_names)
+                    + suffix
+                )
+
+            table = database.getTable(table_name)
+            column_names = [column["name"] for column in self._column_metadata(table)]
+            id_column = self._resolve_column_alias(column_names, aliases["legacy_id"])
+            name_column = self._resolve_column_alias(column_names, aliases["name"])
+
+            if name_column is None:
+                raise LegacyColumnNotFound(
+                    f"Não foi possível mapear a coluna de nome da tabela {table_name}. "
+                    f"Colunas disponíveis: {', '.join(column_names)}"
+                )
+
+            by_name: dict[str, dict] = {}
+            for row in table:
+                name = repair_legacy_text(row.get(name_column))
+                if not name:
+                    continue
+                normalized_name = normalize_company_name(name)
+                if not normalized_name:
+                    continue
+                legacy_id = integer(row.get(id_column)) if id_column else None
+                item = {
+                    "legacy_id": legacy_id,
+                    "legacy_key": catalog_legacy_key(
+                        resource,
+                        legacy_id=legacy_id,
+                        name=name,
+                    ),
+                    "name": name,
+                }
+                existing = by_name.get(normalized_name)
+                if existing is None or (
+                    existing["legacy_id"] is None and legacy_id is not None
+                ):
+                    by_name[normalized_name] = item
+
+        return sorted(
+            by_name.values(),
+            key=lambda item: normalized_search(item["name"]),
+        )
+
     def list_budgeting_table(
         self,
         resource: str,
@@ -399,7 +980,48 @@ class LegacyRepository:
         filter_value: str = "",
     ) -> dict:
         """Lê uma tabela permitida sem expor SQL ou nomes arbitrários."""
-        expected_names = LEGACY_TABLES.get(resource)
+        return self._list_allowed_table(
+            allowed_tables=LEGACY_TABLES,
+            resource=resource,
+            offset=offset,
+            limit=limit,
+            search=search,
+            filter_column=filter_column,
+            filter_value=filter_value,
+        )
+
+    def list_commercial_table(
+        self,
+        resource: str,
+        offset: int,
+        limit: int,
+        search: str = "",
+        filter_column: str = "",
+        filter_value: str = "",
+    ) -> dict:
+        """Lê dados de propostas permitidos para o importador do BFF."""
+        return self._list_allowed_table(
+            allowed_tables=PROPOSAL_TABLES,
+            resource=resource,
+            offset=offset,
+            limit=limit,
+            search=search,
+            filter_column=filter_column,
+            filter_value=filter_value,
+        )
+
+    def _list_allowed_table(
+        self,
+        *,
+        allowed_tables: dict[str, tuple[str, ...]],
+        resource: str,
+        offset: int,
+        limit: int,
+        search: str = "",
+        filter_column: str = "",
+        filter_value: str = "",
+    ) -> dict:
+        expected_names = allowed_tables.get(resource)
         if expected_names is None:
             raise LegacyResourceNotFound(
                 f"Recurso legado não permitido: {resource}"
@@ -470,6 +1092,103 @@ class LegacyRepository:
             "next_offset": offset + len(items) if has_more else None,
         }
 
+    def list_measurement_units(self) -> list[dict]:
+        result = self.list_budgeting_table(
+            resource="measurement-units",
+            offset=0,
+            limit=500,
+        )
+
+        units: list[dict] = []
+
+        for row in result["items"]:
+            legacy_id = integer(
+                row.get("unidadeDeMedidaId")
+            )
+            name = display_text(
+                row.get("unidadeDeMedidaNome")
+            )
+            abbreviation = display_text(
+                row.get("unidadeDeMedidaSigla")
+            )
+
+            if legacy_id is None or not abbreviation:
+                continue
+
+            units.append(
+                {
+                    "legacy_id": legacy_id,
+                    "name": name,
+                    "abbreviation": abbreviation,
+                }
+            )
+
+        units.sort(
+            key=lambda unit: normalized_search(
+                unit["abbreviation"]
+            )
+        )
+
+        return units
+
+    def list_supply_groups(self) -> list[dict]:
+        groups_by_name: dict[str, dict] = {}
+
+        name_aliases = {
+            "DIVERSOS": "Diversos",
+            "EPI S": "EPIs",
+            "MTERIAL BASICO": "Material Básico",
+            "PINTURA": "Pintura",
+        }
+
+        with self.factory.connect() as database:
+            for row in self._rows(
+                    database,
+                    "tblGrupoDeMaterial",
+            ):
+                legacy_id = integer(
+                    row.get("grupoDeMaterialID")
+                )
+                original_name = display_text(
+                    row.get("grupoDeMaterialNome")
+                )
+
+                if legacy_id is None or not original_name:
+                    continue
+
+                original_key = normalize_company_name(
+                    original_name
+                )
+
+                name = name_aliases.get(
+                    original_key,
+                    original_name,
+                )
+
+                normalized_name = normalize_company_name(name)
+                existing = groups_by_name.get(normalized_name)
+
+                if existing is None:
+                    groups_by_name[normalized_name] = {
+                        "legacy_id": legacy_id,
+                        "name": name,
+                    }
+                    continue
+
+                # Quando a tabela possui dois cadastros com
+                # o mesmo nome, utiliza o menor ID.
+                if legacy_id < existing["legacy_id"]:
+                    existing["legacy_id"] = legacy_id
+                    existing["name"] = name
+
+        groups = list(groups_by_name.values())
+
+        groups.sort(
+            key=lambda group: group["legacy_id"]
+        )
+
+        return groups
+
     def ping(self) -> None:
         with self.factory.connect() as database:
             iterator = iter(
@@ -484,6 +1203,41 @@ class LegacyRepository:
             str(name).casefold(): str(name)
             for name in database.getTableNames()
         }
+
+    @classmethod
+    def _table_catalog(
+        cls,
+        database: Any,
+        resources: dict[str, tuple[str, ...]],
+    ) -> list[dict]:
+        available_names = cls._table_names(database)
+        catalog: list[dict] = []
+        for resource, expected_names in resources.items():
+            resolved_name = cls._resolve_table_name(available_names, expected_names)
+            if resolved_name is None:
+                catalog.append({
+                    "resource": resource,
+                    "expected_table_names": list(expected_names),
+                    "table_name": None,
+                    "available": False,
+                    "row_count": None,
+                    "columns": [],
+                    "similar_table_names": cls._similar_table_names(
+                        available_names.values(), expected_names
+                    ),
+                })
+                continue
+            table = database.getTable(resolved_name)
+            catalog.append({
+                "resource": resource,
+                "expected_table_names": list(expected_names),
+                "table_name": resolved_name,
+                "available": True,
+                "row_count": int(table.getRowCount()),
+                "columns": cls._column_metadata(table),
+                "similar_table_names": [],
+            })
+        return catalog
 
     @staticmethod
     def _resolve_table_name(
@@ -553,6 +1307,21 @@ class LegacyRepository:
         return resolved
 
     @staticmethod
+    def _resolve_column_alias(
+        column_names: list[str],
+        aliases: tuple[str, ...],
+    ) -> str | None:
+        names_by_key = {
+            normalize_company_name(column_name): column_name
+            for column_name in column_names
+        }
+        for alias in aliases:
+            resolved = names_by_key.get(normalize_company_name(alias))
+            if resolved is not None:
+                return resolved
+        return None
+
+    @staticmethod
     def _matches_filter(value: Any, expected: str) -> bool:
         return normalized_search(value) == normalized_search(expected)
 
@@ -599,26 +1368,33 @@ class LegacyRepository:
 
     @staticmethod
     def _belongs_to_client(
-        work: dict,
-        name: str,
-        document: str,
+            work: dict,
+            name: str,
+            document: str,
     ) -> bool:
         requested_document = document_key(document)
         work_document = document_key(
             work["client_document"]
         )
 
-        # Se ambos possuem CNPJ, ele é a identificação principal.
         if requested_document and work_document:
             return requested_document == work_document
 
-        # Quando o Access não fornece CNPJ, compara nomes normalizados.
         if name:
             return (
-                normalize_company_name(name)
-                == normalize_company_name(
-                    work["client_name"]
-                )
+                    normalize_company_name(name)
+                    == normalize_company_name(
+                work["client_name"]
+            )
             )
 
         return True
+
+    def list_all_tables(self) -> list[str]:
+        with self.factory.connect() as database:
+            available_names = self._table_names(database)
+
+            return sorted(
+                available_names.values(),
+                key=str.casefold,
+            )
