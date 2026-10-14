@@ -2,26 +2,34 @@ services:
   legacy-bridge:
     build: .
     restart: unless-stopped
-    env_file: .env
+
+    env_file:
+      - .env
+
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx2g -XX:+ExitOnOutOfMemoryError"
+
     volumes:
-      - /mnt/conan/sgo:/legacy-db:ro
-    networks:
-      - bridge-private
+      - /home/public/SGO:/legacy-db:ro
+
     ports:
-      - "127.0.0.1:8100:8100"
+      - "100.94.219.106:8100:8100"
+
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8100/health/live"]
-      interval: 30s
+      test:
+        - CMD
+        - curl
+        - -fsS
+        - http://127.0.0.1:8100/health/live
+      interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 20s
+      retries: 5
+      start_period: 30s
+
     read_only: true
+
     tmpfs:
-      - /tmp
+      - /tmp:size=512m,mode=1777
+
     security_opt:
       - no-new-privileges:true
-
-networks:
-  bridge-private:
-    driver: bridge
-

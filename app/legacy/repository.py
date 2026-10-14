@@ -468,6 +468,9 @@ class LegacyRepository:
             }
 
         legacy_username = text(user.get("usuNome"))
+        group_name = repair_legacy_text(user.get("usuGrupo"))
+        groups = ([{"name": group_name, "legacy_name": group_name}]
+                  if group_name else [])
 
         return {
             "authenticated": True,
@@ -483,7 +486,7 @@ class LegacyRepository:
                     user.get("usuLogadoEm")
                 ),
             },
-            "groups": [],
+            "groups": groups,
             "modules": [],
             "permissions": [],
         }
