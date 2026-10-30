@@ -1,0 +1,5 @@
+# Sobreposição de produção: preserva docker-compose.yml e apenas substitui build local por imagem GHCR.
+services:
+  legacy-bridge:
+    build: !reset null
+    image: ghcr.io/rickaicka/daruix-legacy-bridge:latest
