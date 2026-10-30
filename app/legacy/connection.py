@@ -91,9 +91,7 @@ class AccessConnectionFactory:
                 "java.io.File"
             )
 
-            return DatabaseBuilder.open(
-                File(str(path))
-            )
+            return DatabaseBuilder(File(str(path))).setReadOnly(True).open()
 
         except LegacyDatabaseUnavailable:
             raise

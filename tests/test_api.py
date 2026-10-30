@@ -9,7 +9,6 @@ from app.dependencies import get_repository
 from app.legacy.repository import (
     COMMERCIAL_TABLES,
     catalog_legacy_key,
-    client_legacy_key,
 )
 from app.main import app
 
@@ -22,8 +21,11 @@ class FakeRepository:
         return [{
             "name": "Cliente A",
             "document": "12.345.678/0001-90",
-            "legacy_key": client_legacy_key("Cliente A", "12.345.678/0001-90"),
         }]
+    def list_client_catalog(self):
+        return [{"legacy_id": 1,
+                 "legacy_key": catalog_legacy_key("clients", legacy_id=1, name="Cliente A"),
+                 "name": "Cliente A", "document": "12.345.678/0001-90"}]
     def list_works(self, client_name, client_document, search, limit):
         return [{"legacy_work_id": 575, "legacy_proposal_id": 8082, "cost_center": "PC26006", "work_name": "OBRA A", "client_name": "Cliente A", "client_document": "12.345.678/0001-90", "attention_to_suggestion": "Renato", "delivery_address": "Rua A", "delivery_phone": "11999999999"}]
     def get_work(self, work_id):
@@ -83,13 +85,14 @@ def test_lists_clients():
     response = client.get("/v1/clients", headers=headers)
     assert response.status_code == 200
     assert response.json()[0]["name"] == "Cliente A"
-    assert len(response.json()[0]["legacy_key"]) == 64
+    assert response.json()[0]["document"] == "12.345.678/0001-90"
 
 
 def test_lists_full_client_catalog():
     response = client.get("/v1/clients/catalog", headers=headers)
     assert response.status_code == 200
     assert response.json()[0]["name"] == "Cliente A"
+    assert len(response.json()[0]["legacy_key"]) == 64
 
 
 def test_gets_work_and_returns_404():

@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     ucanaccess_classpath: str = "/opt/ucanaccess/*"
     db_connect_timeout_seconds: int = 10
 
+    # Nomes REAIS devem ser obtidos no Access e configurados no servidor.
+    # Ausência de mapeamento não é equivalente a uma coleção vazia de RMs.
+    material_requisition_tables: dict[str, tuple[str, ...]] = {
+        "requests": (), "request-items": (),
+    }
+
     def allowed_client_list(self) -> list[str]:
         return [item.strip() for item in self.bridge_allowed_clients.split(",") if item.strip()]
 

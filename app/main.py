@@ -289,3 +289,41 @@ def budgeting_table(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error),
         ) from error
+
+
+@app.get(
+    "/v1/material-requisitions/tables",
+    response_model=list[LegacyTableInfoResponse],
+    dependencies=[Depends(require_service_auth)],
+)
+def material_requisition_tables(repository: LegacyRepository = Depends(get_repository)):
+    return repository.list_material_requisition_tables()
+
+
+@app.get(
+    "/v1/material-requisitions/{resource}",
+    response_model=LegacyTablePageResponse,
+    dependencies=[Depends(require_service_auth)],
+)
+def material_requisition_table(
+    resource: str,
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=500),
+    search: str = Query(default="", max_length=255),
+    filter_column: str = Query(default="", max_length=255),
+    filter_value: str = Query(default="", max_length=500),
+    repository: LegacyRepository = Depends(get_repository),
+):
+    if bool(filter_column.strip()) != bool(filter_value.strip()):
+        raise HTTPException(status_code=422,
+                            detail="filter_column e filter_value devem ser enviados juntos.")
+    try:
+        return repository.list_material_requisition_table(
+            resource=resource.strip(), offset=offset, limit=limit,
+            search=search.strip(), filter_column=filter_column.strip(),
+            filter_value=filter_value.strip(),
+        )
+    except (LegacyResourceNotFound, LegacyTableNotFound) as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except LegacyColumnNotFound as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error

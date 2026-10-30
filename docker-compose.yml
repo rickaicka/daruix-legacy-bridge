@@ -13,7 +13,7 @@ services:
       - /home/public/SGO:/legacy-db:ro
 
     ports:
-      - "100.94.219.106:8100:8100"
+      - "100.91.222.100:8100:8100"
 
     healthcheck:
       test:

@@ -1,0 +1,132 @@
+name: Build e Deploy - Daruix Legacy Bridge (Tailscale)
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daruix-legacy-bridge-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: rickaicka/daruix-legacy-bridge
+
+jobs:
+  build-and-push:
+    name: Publicar imagem no GHCR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login no GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Gerar tags
+        id: metadata
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=ref,event=tag
+            type=sha,prefix=sha-
+      - name: Build e push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-tailscale:
+    name: Atualizar Legacy Bridge na VPN
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: bridge-vpn
+    steps:
+      - name: Checkout do compose de deploy
+        uses: actions/checkout@v4
+
+      - name: Entrar na tailnet
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
+      - name: Preparar SSH com identidade do host verificada
+        env:
+          DEPLOY_KEY: ${{ secrets.TAILSCALE_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.TAILSCALE_KNOWN_HOSTS }}
+          TARGET_HOST: ${{ secrets.TAILSCALE_HOST }}
+          TARGET_USER: ${{ secrets.TAILSCALE_USER }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_KEY"
+          test -n "$KNOWN_HOSTS"
+          test -n "$TARGET_HOST"
+          test -n "$TARGET_USER"
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+          tailscale status
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes \
+            -o ConnectTimeout=15 "$TARGET_USER@$TARGET_HOST" 'echo "SSH Tailscale OK"'
+
+      - name: Copiar compose e atualizar apenas o container Bridge
+        env:
+          TARGET_HOST: ${{ secrets.TAILSCALE_HOST }}
+          TARGET_USER: ${{ secrets.TAILSCALE_USER }}
+          DEPLOY_DIR: ${{ vars.TAILSCALE_DEPLOY_DIR }}
+        run: |
+          set -euo pipefail
+          DEPLOY_DIR="${DEPLOY_DIR:-/opt/daruix-legacy-bridge}"
+          # Bloqueia valores inesperados; diretório absoluto e sem caracteres de shell.
+          if ! [[ "$DEPLOY_DIR" =~ ^/[a-zA-Z0-9_./-]+$ ]]; then
+            echo 'Diretório de deploy inválido.' >&2
+            exit 1
+          fi
+          REMOTE="$TARGET_USER@$TARGET_HOST"
+          SSH_ARGS=(-o BatchMode=yes -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes)
+          ssh "${SSH_ARGS[@]}" "$REMOTE" "mkdir -p '$DEPLOY_DIR'"
+          scp "${SSH_ARGS[@]}" docker-compose.deploy.yml "$REMOTE:$DEPLOY_DIR/docker-compose.deploy.yml"
+          ssh "${SSH_ARGS[@]}" "$REMOTE" "DEPLOY_DIR='$DEPLOY_DIR' sh -se" <<'REMOTE_SCRIPT'
+          set -eu
+          cd "$DEPLOY_DIR"
+          test -f .env || { echo 'Arquivo .env não encontrado no host VPN.' >&2; exit 1; }
+          test -d /home/public/SGO || { echo 'Montagem /home/public/SGO não encontrada.' >&2; exit 1; }
+          docker compose -f docker-compose.deploy.yml config --quiet
+          docker compose -f docker-compose.deploy.yml pull legacy-bridge
+          docker compose -f docker-compose.deploy.yml up -d --no-deps --force-recreate legacy-bridge
+          CONTAINER_ID=$(docker compose -f docker-compose.deploy.yml ps -q legacy-bridge)
+          test -n "$CONTAINER_ID"
+          for i in $(seq 1 30); do
+            HEALTH=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$CONTAINER_ID")
+            case "$HEALTH" in
+              healthy) echo 'Legacy Bridge atualizado e saudável'; exit 0 ;;
+              unhealthy|missing) docker logs --tail=100 "$CONTAINER_ID"; exit 1 ;;
+            esac
+            sleep 5
+          done
+          echo 'Timeout aguardando healthcheck' >&2
+          docker logs --tail=100 "$CONTAINER_ID"
+          exit 1
+          REMOTE_SCRIPT

@@ -862,6 +862,30 @@ class LegacyRepository:
 
         return stages
 
+    def _material_requisition_tables(self) -> dict[str, tuple[str, ...]]:
+        configured = self.factory.settings.material_requisition_tables
+        return {name: tuple(configured.get(name, ()))
+                for name in ("requests", "request-items")}
+
+    def list_material_requisition_tables(self) -> list[dict]:
+        """Descoberta somente dos recursos de RM configurados no servidor."""
+        with self.factory.connect() as database:
+            return self._table_catalog(database, self._material_requisition_tables())
+
+    def list_material_requisition_table(
+        self, resource: str, offset: int, limit: int, search: str = "",
+        filter_column: str = "", filter_value: str = "",
+    ) -> dict:
+        allowed = self._material_requisition_tables()
+        if resource not in allowed:
+            raise LegacyResourceNotFound("Recurso de RM não permitido.")
+        if not allowed[resource]:
+            raise LegacyTableNotFound("Mapeamento Access de RM ainda não configurado.")
+        return self._list_allowed_table(
+            allowed_tables=allowed, resource=resource, offset=offset, limit=limit,
+            search=search, filter_column=filter_column, filter_value=filter_value,
+        )
+
     def list_budgeting_tables(self) -> list[dict]:
         """Descreve as tabelas de orçamento permitidas e informa quais existem."""
         with self.factory.connect() as database:
