@@ -1,3 +1,5 @@
+import pytest
+
 from fastapi.testclient import TestClient
 from app.main import app
 from app.dependencies import get_repository
@@ -54,6 +56,12 @@ def test_bff_to_bridge_http_contract():
     from pathlib import Path
     from urllib.error import HTTPError
     path = Path(__file__).resolve().parents[2] / 'bff/budgeting/services/legacy_material_requisitions.py'
+    if not path.is_file():
+        pytest.skip(
+            'Teste de integração BFF/Bridge requer o arquivo do BFF, '
+            'que não está presente no checkout isolado do Bridge.'
+        )
+
     spec = importlib.util.spec_from_file_location('rm_integration_client', path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -76,7 +84,6 @@ def test_bff_to_bridge_http_contract():
                                                      token='test-token', opener=Opener())
         assert bff.list_tables()[0]['available'] is False
         assert list(bff.iter_resource('requests')) == []
-        import pytest
         with pytest.raises(module.LegacyRequisitionError) as error:
             list(bff.iter_resource('request-items'))
         assert error.value.status_code == 404

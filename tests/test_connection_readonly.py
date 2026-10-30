@@ -14,4 +14,7 @@ def test_open_database_explicitly_read_only(monkeypatch):
     factory=AccessConnectionFactory(Settings(bridge_service_token='test'))
     monkeypatch.setattr(factory, '_start_jvm', lambda: None)
     assert factory._open_database(Path('/db/SGO.accdb')) == 'database'
-    assert calls == [('path','/db/SGO.accdb'),('read_only',True)]
+    assert calls == [
+        ('path', str(Path('/db/SGO.accdb'))),
+        ('read_only', True),
+    ]
