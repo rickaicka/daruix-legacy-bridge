@@ -10,7 +10,7 @@ services:
       JAVA_TOOL_OPTIONS: "-Xms128m -Xmx2g -XX:+ExitOnOutOfMemoryError"
 
     volumes:
-      - /home/public/SGO:/legacy-db:ro
+      - "${LEGACY_DB_HOST_DIR:-/home/public/SGO}:/legacy-db:ro"
 
     ports:
       - "100.91.222.100:8100:8100"
