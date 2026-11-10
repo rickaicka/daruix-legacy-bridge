@@ -29,6 +29,9 @@ jobs:
   build-and-push:
     name: Publicar imagem no GHCR
     needs: tests
+    if: github.ref == 'refs/heads/main'
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -51,6 +54,7 @@ jobs:
             type=raw,value=latest
             type=sha,prefix=sha-
       - name: Build e push
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -67,7 +71,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: bridge-vpn
     steps:
-      - uses: actions/checkout@v4
       - name: Entrar na tailnet
         uses: tailscale/github-action@v3
         with:
@@ -94,31 +97,63 @@ jobs:
             -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
             "$TARGET_USER@$TARGET_HOST" 'echo "SSH Tailscale OK"'
 
-      - name: Atualizar serviço existente no Compose
+      - name: Sincronizar commit e atualizar serviço no Compose
         shell: bash
         env:
           TARGET_HOST: ${{ secrets.TAILSCALE_HOST }}
           TARGET_USER: ${{ secrets.TAILSCALE_USER }}
+          IMAGE_DIGEST: ${{ needs.build-and-push.outputs.digest }}
         run: |
           set -euo pipefail
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
           REMOTE="$TARGET_USER@$TARGET_HOST"
           SSH_ARGS=(-i "$HOME/.ssh/id_ed25519" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes)
-          # O override vai para o diretório do projeto já em execução.
-          scp "${SSH_ARGS[@]}" docker-compose.ghcr.yml "$REMOTE:/home/renato/daruix-bridge-vm/docker-compose.ghcr.yml"
-          ssh "${SSH_ARGS[@]}" "$REMOTE" 'sh -se' <<'REMOTE_SCRIPT'
+          ssh "${SSH_ARGS[@]}" "$REMOTE" "sh -se -- '$GITHUB_SHA' '$IMAGE_DIGEST'" <<'REMOTE_SCRIPT'
           set -eu
+          COMMIT="$1"
+          IMAGE_DIGEST="$2"
           cd /home/renato/daruix-bridge-vm
+
           test -s .env || { echo 'Arquivo .env ausente' >&2; exit 1; }
           test -r /mnt/conan/sgo/SGO/SGO_be.accdb || { echo 'Banco Access indisponível' >&2; exit 1; }
-          docker compose -f docker-compose.yml -f docker-compose.ghcr.yml config --quiet
-          docker compose -f docker-compose.yml -f docker-compose.ghcr.yml pull legacy-bridge
-          docker compose -f docker-compose.yml -f docker-compose.ghcr.yml up -d --no-deps --force-recreate legacy-bridge
-          CID=$(docker compose -f docker-compose.yml -f docker-compose.ghcr.yml ps -q legacy-bridge)
+          test "$(git branch --show-current)" = main || { echo 'A VM precisa estar na branch main' >&2; exit 1; }
+          test -z "$(git status --porcelain --untracked-files=no)" || {
+            echo 'Há alterações locais em arquivos versionados na VM. Revise git status antes do deploy.' >&2
+            exit 1
+          }
+
+          GIT_TERMINAL_PROMPT=0 git fetch origin main
+          git merge-base --is-ancestor "$COMMIT" FETCH_HEAD || {
+            echo 'O commit do workflow não pertence à main remota' >&2
+            exit 1
+          }
+          git merge-base --is-ancestor HEAD "$COMMIT" || {
+            echo 'A main da VM está adiantada ou divergiu do commit do workflow' >&2
+            exit 1
+          }
+          git merge --ff-only --no-overwrite-ignore "$COMMIT"
+
+          PINNED_COMPOSE=$(mktemp)
+          trap 'rm -f "$PINNED_COMPOSE"' EXIT
+          printf 'services:\n  legacy-bridge:\n    image: "ghcr.io/rickaicka/daruix-legacy-bridge@%s"\n' "$IMAGE_DIGEST" > "$PINNED_COMPOSE"
+
+          compose() {
+            docker compose -f docker-compose.yml -f docker-compose.ghcr.yml -f "$PINNED_COMPOSE" "$@"
+          }
+
+          compose config --quiet
+          compose pull legacy-bridge
+          compose up -d --no-deps --force-recreate legacy-bridge
+          CID=$(compose ps -q legacy-bridge)
           test -n "$CID"
+          REVISION=$(docker inspect -f '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$CID")
+          test "$REVISION" = "$COMMIT" || { echo "Revisão inesperada na imagem: $REVISION" >&2; exit 1; }
+
           for i in $(seq 1 30); do
             HEALTH=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$CID")
             case "$HEALTH" in
-              healthy) echo 'Bridge saudável'; exit 0 ;;
+              healthy) echo "Bridge saudável no commit $COMMIT"; exit 0 ;;
               unhealthy|missing) docker logs --tail=60 "$CID"; exit 1 ;;
             esac
             sleep 5
