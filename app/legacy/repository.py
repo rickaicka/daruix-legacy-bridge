@@ -442,6 +442,56 @@ class LegacyRepository:
     def __init__(self, factory: AccessConnectionFactory):
         self.factory = factory
 
+
+    def last_purchase_order_sequence(self, pc_code: str) -> dict:
+        """Maior sequência de OC registrada em tblOrdemDeCompra para uma PC.
+
+        Consulta somente leitura via Jackcess. Dados inesperados bloqueiam a
+        emissão: não inferir que ausência/erro significa sufixo zero.
+        """
+        if not re.fullmatch(r"PC[0-9]{5}", pc_code):
+            raise ValueError("PC inválida para conciliação de OC.")
+        table_name = "tblOrdemDeCompra"
+        matched = 0
+        maximum = 0
+        with self.factory.connect() as database:
+            available = self._table_names(database)
+            resolved = available.get(table_name.casefold())
+            if not resolved:
+                raise LegacyTableNotFound("Tabela de OCs legadas não encontrada.")
+            table = database.getTable(resolved)
+            cols = {str(c.getName()).casefold() for c in table.getColumns()}
+            if not {"ordemdecomprapc", "ordemdecompranumero"}.issubset(cols):
+                raise LegacyColumnNotFound("Campos de PC/número da OC não encontrados no legado.")
+            for row in table:
+                row_pc = text(row.get("ordemDeCompraPC")).upper()
+                if row_pc != pc_code:
+                    continue
+                matched += 1
+                raw = text(row.get("ordemDeCompraNumero"))
+                if not raw:
+                    raise ValueError(f"OC legada da {pc_code} sem número; conciliação bloqueada.")
+                # O formato físico deve ser validado em produção. Aceitamos
+                # o sufixo 1-999 ou o código inteiro PC(5)+sufixo(3).
+                if not raw.isdecimal():
+                    raise ValueError(f"Número legado inválido na {pc_code}; conciliação bloqueada.")
+                if len(raw) == 8 and raw.startswith(pc_code[2:]):
+                    sequence = int(raw[-3:])
+                elif len(raw) <= 3:
+                    sequence = int(raw)
+                else:
+                    raise ValueError(f"Formato inesperado de OC na {pc_code}; conciliação bloqueada.")
+                if not 1 <= sequence <= 999:
+                    raise ValueError(f"Sufixo inválido de OC na {pc_code}; conciliação bloqueada.")
+                maximum = max(maximum, sequence)
+        return {
+            "pc": pc_code,
+            "found": matched > 0,
+            "last_suffix": maximum,
+            "matched_orders": matched,
+            "source": table_name,
+        }
+
     def authenticate(
         self,
         username: str,

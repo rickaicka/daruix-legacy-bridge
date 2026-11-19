@@ -327,3 +327,18 @@ def material_requisition_table(
         raise HTTPException(status_code=404, detail=str(error)) from error
     except LegacyColumnNotFound as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.get(
+    "/v1/purchase-orders/last-sequence",
+    dependencies=[Depends(require_service_auth)],
+)
+def purchase_order_last_sequence(
+    pc: str = Query(pattern=r"^PC[0-9]{5}$"),
+    repository: LegacyRepository = Depends(get_repository),
+):
+    try:
+        return repository.last_purchase_order_sequence(pc)
+    except (LegacyTableNotFound, LegacyColumnNotFound, ValueError) as error:
+        # Uma sequência ambígua nunca deve virar zero.
+        raise HTTPException(status_code=409, detail=str(error)) from error
